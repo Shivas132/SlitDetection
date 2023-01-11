@@ -1,11 +1,12 @@
 """Module to search and test denoising methods."""
+import numpy as np
 
-from image_process_utils import frames_as_matrix_from_binary_file
+from image_process_utils import frames_as_matrix_from_binary_file, save_video
 from matplotlib import pyplot as plt
 import cv2 as cv
 
 
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\CAM1_22_41_46.dat"
+video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_0\exp.dat"
 data = frames_as_matrix_from_binary_file(video_path)
 
 # select a frame with a slit:
@@ -17,21 +18,29 @@ h = 3
 template_window_size = 7
 search_window_size = 21
 
-background_frame = cv.fastNlMeansDenoising(data[0], h=h, templateWindowSize=template_window_size,
+# --- creating denoised video: ---
+new_video = np.empty(data.shape)
+for i in range(data.shape[0]):
+    new_video[i] = cv.fastNlMeansDenoising(data[i], h=h, templateWindowSize=template_window_size,
                                            searchWindowSize=search_window_size)
 
-denoise_data = cv.fastNlMeansDenoising(img_to_denoise, h=h, templateWindowSize=template_window_size,
-                                       searchWindowSize=search_window_size)
+save_video(new_video, "exp_0_denoised")
 
-plt.figure(figsize=(20, 16))
-origin = plt.subplot(211)
-plt.imshow(img_to_denoise, cmap='gray')
-origin.set_title("Original")
-
-denoise_img = plt.subplot(212)
-plt.imshow(denoise_data, cmap='gray')
-denoise_img.set_title(f"denoise: h={h}, search window={search_window_size}, template window={template_window_size}")
-plt.show()
+# background_frame = cv.fastNlMeansDenoising(data[0], h=h, templateWindowSize=template_window_size,
+#                                            searchWindowSize=search_window_size)
+#
+# denoise_data = cv.fastNlMeansDenoising(img_to_denoise, h=h, templateWindowSize=template_window_size,
+#                                        searchWindowSize=search_window_size)
+#
+# plt.figure(figsize=(20, 16))
+# origin = plt.subplot(211)
+# plt.imshow(img_to_denoise, cmap='gray')
+# origin.set_title("Original")
+#
+# denoise_img = plt.subplot(212)
+# plt.imshow(denoise_data, cmap='gray')
+# denoise_img.set_title(f"denoise: h={h}, search window={search_window_size}, template window={template_window_size}")
+# plt.show()
 
 # # --- Detect edges with Sobel: ---
 # sobel_x = cv.Sobel(src=denoise_data, ddepth=cv.CV_8U, dx=1, dy=0, ksize=5)
