@@ -8,10 +8,15 @@ OFFSET = 6336
 FRAMES_NUM = 128
 FRAME_HEIGHT = 250
 FRAME_WIDTH = 400
+MAX_GRAY_VAL = 255
 
 
-def normalize(data: np.array, max_val: int):
-    return np.uint8((data * (max_val / np.max(data))))
+def normalize_to_float(data: np.array) -> np.array:
+    return np.float64(data) / np.max(data)
+
+
+def normalize_to_int(data: np.array, max_val: int) -> np.array:
+    return np.uint8(data * (max_val / np.max(data)))
 
 
 def frames_as_matrix_from_binary_file(video_file_path, to_normalize=True):
@@ -26,12 +31,12 @@ def frames_as_matrix_from_binary_file(video_file_path, to_normalize=True):
     data = data.reshape((FRAMES_NUM, FRAME_HEIGHT, FRAME_WIDTH))
     # Normalize the array to [0,255] grayscale
     if to_normalize:
-        data = normalize(data, 255)
+        data = normalize_to_float(data)
     return data
 
 
 def show_frame(img, title='', figsize=(20, 16)):
-    # img = img * (255 / np.max(img))
+    img = normalize_to_int(img, MAX_GRAY_VAL)
     plt.figure(figsize=figsize)
     plt.imshow(img, cmap='gray')
     plt.title(title)

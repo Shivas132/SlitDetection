@@ -1,14 +1,17 @@
 """Module to search and test denoising methods."""
 import numpy as np
 
-from image_process_utils import frames_as_matrix_from_binary_file, save_video
+from image_process_utils import *
 from matplotlib import pyplot as plt
 import cv2 as cv
 
 
 video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_0\exp.dat"
 data = frames_as_matrix_from_binary_file(video_path)
+show_frame(data[64])
 
+data = normalize_to_int(data, MAX_GRAY_VAL)
+show_frame(data[64])
 # select a frame with a slit:
 frame_num = 64
 img_to_denoise = data[frame_num]
@@ -20,9 +23,11 @@ search_window_size = 21
 
 # --- creating denoised video: ---
 new_video = np.empty(data.shape)
+
 for i in range(data.shape[0]):
     new_video[i] = cv.fastNlMeansDenoising(data[i], h=h, templateWindowSize=template_window_size,
                                            searchWindowSize=search_window_size)
+
 
 save_video(new_video, "exp_0_denoised")
 

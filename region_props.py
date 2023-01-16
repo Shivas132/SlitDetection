@@ -15,9 +15,12 @@ video = video.reshape((FRAMES_NUM, FRAME_HEIGHT, FRAME_WIDTH))
 
 frame_num = 127
 frame = video[frame_num]
+show_frame(frame)
 
 morph_size = 3
 closed = closing(frame, square(morph_size))
+show_frame(closed)
+
 
 labels = measure.label(closed)
 
