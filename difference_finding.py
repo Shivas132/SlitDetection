@@ -2,34 +2,30 @@
 
 from image_process_utils import *
 import numpy as np
+import cv2 as cv
 
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_1\exp.dat"
+video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_denoised.dat"
 
 h = 3
 template_window_size = 7
 search_window_size = 21
 
-# with open(video_path, 'rb') as f:
-#     data = np.fromfile(f, dtype='<i2', count=128 * FRAME_HEIGHT * FRAME_WIDTH)
-# data = data.reshape((FRAMES_NUM, FRAME_HEIGHT, FRAME_WIDTH))
-
-data = frames_as_matrix_from_binary_file(video_path)
+data = frames_as_matrix_from_binary_file(video_path, offset=False)
+# data = normalize_to_int(data, MAX_GRAY_VAL)
 
 # --- create delta images for each frame: ---
 frames_num, rows, cols = data.shape
 deltas = np.empty((frames_num, rows, cols))
-sum_of_deltas = np.zeros((rows, cols))
+sum_of_deltas = np.zeros((rows, cols), np.float64)
 
 for i in range(1, frames_num):
     delta_img = data[i] - data[i-1]
-    # sum_of_deltas = thresholding(sum_of_deltas, 100)
-    sum_of_deltas = sum_of_deltas + delta_img  # logic OR
+    delta_img = thresholding(delta_img, 0.05)
+    sum_of_deltas = cv.bitwise_or(sum_of_deltas, delta_img)
     deltas[i] = sum_of_deltas
 
-for i in range(frames_num):
-    deltas[i] = thresholding(deltas[i], 0)
 
-save_video(deltas, "exp_1_deltas_thresh0")
+save_video(deltas, "exp_0_deltas_or")
 
 
 # --- difference by flat field: ---

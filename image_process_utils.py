@@ -15,23 +15,23 @@ def normalize_to_float(data: np.array) -> np.array:
     return np.float64(data) / np.max(data)
 
 
-def normalize_to_int(data: np.array, max_val: int) -> np.array:
+def normalize_to_int(data: np.array, max_val: int = MAX_GRAY_VAL) -> np.array:
     return np.uint8(data * (max_val / np.max(data)))
 
 
-def frames_as_matrix_from_binary_file(video_file_path, to_normalize=True):
+def frames_as_matrix_from_binary_file(video_file_path, offset=True):
     # Open the .dat file in binary mode
     with open(video_file_path, 'rb') as f:
-        # Move the file pointer to the specified offset
-        f.seek(OFFSET)
+        if offset:
+            # Move the file pointer to the specified offset
+            f.seek(OFFSET)
         # Read the data into a NumPy array
         data = np.fromfile(f, dtype='<i2', count=FRAMES_NUM * FRAME_HEIGHT * FRAME_WIDTH)
 
     # Reshape the array into the desired dimensions
     data = data.reshape((FRAMES_NUM, FRAME_HEIGHT, FRAME_WIDTH))
-    # Normalize the array to [0,255] grayscale
-    if to_normalize:
-        data = normalize_to_float(data)
+    # Normalize the array to [0,1] grayscale
+    data = normalize_to_float(data)
     return data
 
 
