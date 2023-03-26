@@ -4,8 +4,9 @@ import numpy as np
 from image_process_utils import *
 from matplotlib import pyplot as plt
 import cv2 as cv
+from paths import EXP_0, EXP_1, EXP_2, EXP_3
 
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_0\exp.dat"
+video_path = EXP_0 + "exp.dat"
 data = frames_as_matrix_from_binary_file(video_path)
 
 data = normalize_to_int(data, MAX_GRAY_VAL)

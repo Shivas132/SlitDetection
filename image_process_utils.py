@@ -2,7 +2,7 @@
 
 from matplotlib import pyplot as plt
 import numpy as np
-
+from paths import OUTPUTS
 
 OFFSET = 6336
 FRAMES_NUM = 128
@@ -44,8 +44,7 @@ def show_frame(img, title='', figsize=(20, 16)):
 
 
 def save_video(video, name):
-    out_file = open(
-        rf"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\{name}.dat", 'wb')
+    out_file = open(OUTPUTS+rf"{name}.dat", 'wb')
     video.astype('int16').tofile(out_file, sep='', format='%d')
     out_file.close()
 

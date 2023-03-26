@@ -3,8 +3,9 @@
 from image_process_utils import *
 import numpy as np
 import cv2 as cv
+from paths import OUTPUTS
 
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_denoised.dat"
+video_path = OUTPUTS+"exp_0_denoised.dat"
 
 h = 3
 template_window_size = 7

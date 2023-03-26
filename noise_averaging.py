@@ -1,9 +1,9 @@
 """Module to utilize the additional videos of every experiment."""
 
 from image_process_utils import *
+from paths import EXP_0, EXP_1, EXP_2, EXP_3
 
-
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_0\static.dat"
+video_path = EXP_0+"static.dat"
 data = frames_as_matrix_from_binary_file(video_path)
 
 mean_frame = np.mean(data, axis=0)

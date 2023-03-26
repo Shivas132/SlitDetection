@@ -11,9 +11,12 @@ import cv2 as cv
 from image_process_utils import *
 from denoising import denoise_video
 from difference_finding import deltas_video
+from paths import EXP_0, EXP_1, EXP_2, EXP_3, OUTPUTS
 
-video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_deltas_or_thresh0.02.dat"
+
+video_path = OUTPUTS+"exp_0_deltas_or_thresh0.02.dat"
 video = frames_as_matrix_from_binary_file(video_path, offset=False)
+
 
 # --- create interactive image of region props for last frame: ---
 
@@ -169,7 +172,7 @@ video = normalize_to_int(video)
 
 
 # -------------- full process for exp_1: --------------
-exp_1_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_1\exp.dat"
+exp_1_path = EXP_1 + "exp.dat"
 data = frames_as_matrix_from_binary_file(exp_1_path)
 data = normalize_to_int(data)
 data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)

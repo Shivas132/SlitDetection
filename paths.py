@@ -1,0 +1,5 @@
+EXP_0 = 'C:\\Users\\elyas\\Desktop\\3rd\\Project\\SlitDetection\\inputs\\exp_0\\'
+EXP_1 = 'C:\\Users\\elyas\\Desktop\\3rd\\Project\\SlitDetection\\inputs\\exp_1\\'
+EXP_2 = 'C:\\Users\\elyas\\Desktop\\3rd\\Project\\SlitDetection\\inputs\\exp_2\\'
+EXP_3 = 'C:\\Users\\elyas\\Desktop\\3rd\\Project\\SlitDetection\\inputs\\exp_3\\'
+OUTPUTS = 'C:\\Users\\elyas\Desktop\\3rd\Project\\SlitDetection\\outputs\\'
