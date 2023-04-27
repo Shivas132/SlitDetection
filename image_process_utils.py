@@ -2,7 +2,8 @@
 
 from matplotlib import pyplot as plt
 import numpy as np
-from paths import OUTPUTS
+from paths import *
+
 
 OFFSET = 6336
 FRAMES_NUM = 128
@@ -43,22 +44,22 @@ def show_frame(img, title='', figsize=(20, 16)):
     plt.show()
 
 
-def save_video(video, name):
-    out_file = open(OUTPUTS+rf"{name}.dat", 'wb')
+def save_video(video, name, directory=OUTPUTS):
+    out_file = open(
+        f"{directory}{name}.dat", 'wb')
     video.astype('int16').tofile(out_file, sep='', format='%d')
     out_file.close()
 
 
-def compare_2_frames(src, denoised, title1='Original', title2='denoised'):
+def compare_2_frames(img1, img2, title1='img1', title2='img2'):
     plt.figure(figsize=(20, 16))
     origin = plt.subplot(211)
-    plt.imshow(src, cmap='gray')
+    plt.imshow(img1, cmap='gray')
     origin.set_title(title1)
 
     denoise_img = plt.subplot(212)
-    plt.imshow(denoised, cmap='gray')
+    plt.imshow(img2, cmap='gray')
     denoise_img.set_title(title2)
-    # denoise_img.set_title(f"denoise: h={h}, search window={search_window_size}, template window={template_window_size}")
     plt.show()
 
 

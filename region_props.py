@@ -11,12 +11,9 @@ import cv2 as cv
 from image_process_utils import *
 from denoising import denoise_video
 from difference_finding import deltas_video
-from paths import EXP_0, EXP_1, EXP_2, EXP_3, OUTPUTS
 
-
-video_path = OUTPUTS+"exp_0_deltas_or_thresh0.02.dat"
-video = frames_as_matrix_from_binary_file(video_path, offset=False)
-
+# video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_deltas_or_thresh0.02.dat"
+# video = frames_as_matrix_from_binary_file(video_path, offset=False)
 
 # --- create interactive image of region props for last frame: ---
 
@@ -65,6 +62,7 @@ properties = ['area', 'eccentricity', 'perimeter', 'axis_major_length', 'orienta
 # box[15:17, 4:20] = 255
 # regs = measure.regionprops(box)
 # region_props_hover(box, ['area', 'orientation'])
+
 
 def imfill(img: np.array) -> np.array:
     """Fill holes in objects in an image using flood fill algorithm.
@@ -133,7 +131,7 @@ def deltas_with_noise_removal(data: np.array, thresh: float = 0.02) -> np.array:
     return deltas
 
 
-def noise_remove_by_props(data):
+def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0.7):
     frames_num, rows, cols = data.shape
     for i in range(frames_num):
         # remove noise by area, orientation, eccentricity:
@@ -141,9 +139,6 @@ def noise_remove_by_props(data):
         labels = measure.label(data[i])
         regs = measure.regionprops(labels, data[i])
         # properties to recognize a slit:
-        min_area = 4
-        orientation = 0.01
-        min_eccentricity = 0.7
         for reg in regs:
             if reg.area < min_area or np.abs(reg.orientation) < orientation or reg.eccentricity < min_eccentricity:
                 min_r, min_c, max_r, max_c = reg.bbox
@@ -151,7 +146,7 @@ def noise_remove_by_props(data):
     return data
 
 
-video = normalize_to_int(video)
+# video = normalize_to_int(video)
 # deltas = deltas_with_noise_removal(video)
 # save_video(deltas, "exp_0_denoised_orientation_0.01_size_4_eccen_0.7_filter")
 # props_remove = noise_remove_by_props(video)
@@ -172,11 +167,38 @@ video = normalize_to_int(video)
 
 
 # -------------- full process for exp_1: --------------
-exp_1_path = EXP_1 + "exp.dat"
+exp_1_path = f"{EXP_1}exp.dat"
 data = frames_as_matrix_from_binary_file(exp_1_path)
 data = normalize_to_int(data)
 data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
-data = deltas_video(data, thresh=0.02)
-data = noise_remove_by_props(data)
-save_video(data, 'exp_1_deltas_orientation_0.01_size_4_eccen_0.7_filter')
+data = normalize_to_float(data)
+
+# experiment of thresholds:
+# thresh = [0.01, 0.02, 0.03, 0.04]
+# for thresh in thresh:
+#     data = deltas_video(data, thresh=thresh)
+#     data = noise_remove_by_props(data)
+#     save_video(data, f'exp_1_deltas_thresh_{thresh}_orientation_0.01_size_4_eccen_0.7_filter', DELTAS)
+
+# ideal: 0.05
+
+# experiment of min_area:
+# areas = [0.5, 1, 2, 3.5]
+# for area in areas:
+#     data = deltas_video(data, 0.04)
+#     data = noise_remove_by_props(data, min_area=area)
+#     save_video(data, f'exp_1_deltas_thresh_0.04_orientation_0.01_size_{area}_eccen_0.7_filter', DELTAS)
+
+# didn't give good results
+
+
+# -------------- exp_0 full pre-process: --------------
+# exp_0_path = f"{EXP_0}exp.dat"
+# data = frames_as_matrix_from_binary_file(exp_0_path)
+# data = normalize_to_int(data)
+# data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
+# data = normalize_to_float(data)
+# data = deltas_video(data, thresh=0.02)
+# data = noise_remove_by_props(data)
+# save_video(data, 'exp_0_preprocess_seperated_orientation_0.01_size_4_eccen_0.7_filter', DELTAS)
 

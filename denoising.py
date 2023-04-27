@@ -2,11 +2,11 @@
 
 import numpy as np
 from image_process_utils import *
+from paths import *
 from matplotlib import pyplot as plt
 import cv2 as cv
-from paths import EXP_0, EXP_1, EXP_2, EXP_3
 
-video_path = EXP_0 + "exp.dat"
+video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\inputs\exp_0\exp.dat"
 data = frames_as_matrix_from_binary_file(video_path)
 
 data = normalize_to_int(data, MAX_GRAY_VAL)
@@ -46,6 +46,24 @@ def denoise_video(data: np.array, h: int = 3, template_window_size: int = 7, sea
         new_video[i] = cv.fastNlMeansDenoising(data[i], h=h, templateWindowSize=template_window_size,
                                                searchWindowSize=search_window_size)
     return new_video
+
+
+exp0 = frames_as_matrix_from_binary_file(EXP_0 + 'exp.dat')
+exp1 = frames_as_matrix_from_binary_file(EXP_1 + 'exp.dat')
+
+exp_list = [normalize_to_int(exp0), normalize_to_int(exp1)]
+d_list = []
+for e in exp_list:
+    d_list.append(denoise_video(e, h=5, template_window_size=7, search_window_size=21))
+
+# compare_2_frames(exp0[64], d_list[0][64])
+# compare_2_frames(exp1[29], d_list[1][29])
+
+# show_frame(exp_list[0][64], figsize=(10, 8))
+# show_frame(exp_list[1][29], figsize=(10, 8))
+
+# show_frame(exp0[64])
+# show_frame(exp1[29])
 
 # new_video = denoise_video(data)
 # save_video(new_video, "exp_0_denoised")
