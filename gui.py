@@ -3,7 +3,7 @@ import tkinter as tk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from image_process_utils import frames_as_matrix_from_binary_file, normalize_to_int, show_frame
-from denoising import denoise_video, denoise_video_selected_frame, denoise2
+from denoising import denoise_video
 from region_props import choose_thresh
 from RectangleDrawer import RectangleDrawer
 
@@ -97,12 +97,14 @@ class App:
         self.update_image(self.current_frame)
 
     def choose_frame(self):
-        self.slit_frame_idx =int(self.frame_scale.get())
+        self.slit_frame_idx = int(self.frame_scale.get())
         print(self.slit_frame_idx)
         self.slit_frame = self.data[int(self.frame_scale.get())]
         if self.slit_frame_idx >=5 :
             self.data = self.data[self.slit_frame_idx-5:]
             print((self.data).shape)
+            self.update_image(0)
+            self.frame_scale.set(0)
             self.frame_scale.configure(from_=0,to=127-self.slit_frame_idx+5)
 
         self.root.update()
@@ -127,10 +129,13 @@ class App:
         self.message_label.config(text="here is you video after first clean")
         self.create_new_canvas()
         self.root.update()
+        self.frame_scale.set(0)
         self.update_image(0)
         self.tresh_button.grid(row = 0, column = 0, pady = 2)
 
     def show_tresh(self):
+        self.message_label.config(text="Processing video, please wait...")
+        self.root.update()
         self.clean_button.grid_remove()
         self.tresh_button.grid_remove()
         self.tresh_videos = choose_thresh(self.new_data, self.slit_area)

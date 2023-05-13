@@ -49,7 +49,7 @@ def slits_area_over_time(video):
 
 
 
-video_path = f"{DELTAS}exp_1_deltas_thresh_0.05_orientation_0.01_size_4_eccen_0.7_filter.dat"
-data = frames_as_matrix_from_binary_file(video_path, offset=False)
-# slits_coverage_rate(data, True)
-# obj_n = slits_number(data, True)
+# video_path = f"{DELTAS}exp_1_deltas_thresh_0.05_orientation_0.01_size_4_eccen_0.7_filter.dat"
+# data = frames_as_matrix_from_binary_file(video_path, offset=False)
+# # slits_coverage_rate(data, True)
+# # obj_n = slits_number(data, True)
