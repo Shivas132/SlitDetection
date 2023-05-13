@@ -10,6 +10,7 @@ from skimage.morphology import closing, square
 import cv2 as cv
 from image_process_utils import *
 from denoising import denoise_video
+import numba
 from difference_finding import deltas_video
 
 # video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_deltas_or_thresh0.02.dat"
@@ -140,10 +141,34 @@ def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0
         regs = measure.regionprops(labels, data[i])
         # properties to recognize a slit:
         for reg in regs:
-            if reg.area < min_area or np.abs(reg.orientation) < orientation or reg.eccentricity < min_eccentricity:
+            if reg.area < min_area: # or np.abs(reg.orientation) < orientation or reg.eccentricity < min_eccentricity:
                 min_r, min_c, max_r, max_c = reg.bbox
                 data[i][min_r:max_r, min_c:max_c] = 0
     return data
+
+
+# @numba.jit(nopython=True)
+def extract_area(video, area):
+    x1, y1, x2, y2 = area  # Extract the rectangle coordinates
+    print(x1,y1,x2,y2)
+    result = np.zeros_like(video)  # Create a black video of the same shape as the input video
+    result[:,y1:y2, x1:x2] = video[:,y1:y2, x1:x2]  # Set the rectangle region to the corresponding region in the input video
+    return result
+
+
+def choose_thresh(video, area):
+    video = normalize_to_float(video)
+    video = extract_area(video, area)
+    # video = extract_area(video,area)
+    print(video.shape)
+    videos = np.zeros((20,) + video.shape, dtype=video.dtype)
+    print(videos.shape)
+    treshes = [i/1000 for i in range(0,100,5)]
+    for i in range(20):
+        deltas = deltas_video(video, thresh=treshes[i])
+        videos[i] = normalize_to_int(deltas)
+        videos[i] = normalize_to_int(videos[i])
+    return videos
 
 
 # video = normalize_to_int(video)
@@ -167,11 +192,11 @@ def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0
 
 
 # -------------- full process for exp_1: --------------
-exp_1_path = f"{EXP_1}exp.dat"
-data = frames_as_matrix_from_binary_file(exp_1_path)
-data = normalize_to_int(data)
-data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
-data = normalize_to_float(data)
+# exp_1_path = f"{EXP_1}exp.dat"
+# data = frames_as_matrix_from_binary_file(exp_1_path)
+# data = normalize_to_int(data)
+# data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
+# data = normalize_to_float(data)
 
 # experiment of thresholds:
 # thresh = [0.01, 0.02, 0.03, 0.04]

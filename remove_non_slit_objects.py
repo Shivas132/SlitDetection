@@ -34,10 +34,10 @@ cube_size = 10
 
 stds = {}
 ratios = {}
-ratio_thresh = 0.2
+ratio_thresh = 0.3
 mask = np.ones((m, n))
-for i in range(0, m, cube_size):
-    for j in range(0, n, cube_size):
+for i in range(0, m, cube_size//5):
+    for j in range(0, n, cube_size//5):
         cube = frame[i: i+cube_size, j: j+cube_size]
         std = np.std(cube)
         ratio = np.sum(cube) / np.square(cube_size)
@@ -47,8 +47,8 @@ for i in range(0, m, cube_size):
             mask[i: i+cube_size, j: j+cube_size] = 0
 
 masked_frame = np.logical_and(frame, mask)
-show_frame(masked_frame)
+# show_frame(masked_frame)
 
 masked_video = np.logical_and(video, mask)
 masked_video = normalize_to_int(masked_video)
-# save_video(masked_video, f'exp1_object_remove_ratio_{ratio_thresh}', OUTPUTS)
+save_video(masked_video, f'exp1_object_remove_ratio_{ratio_thresh}_overlapping_2pxls', OUTPUTS)
