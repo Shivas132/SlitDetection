@@ -133,6 +133,18 @@ def deltas_with_noise_removal(data: np.array, thresh: float = 0.02) -> np.array:
 
 
 def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0.7):
+    """
+        Removes noise in the data based on specified properties.
+
+        Args:
+            data (array-like): The input data.
+            min_area (int, optional): The minimum area threshold for noise removal. Defaults to 4.
+            orientation (float, optional): The orientation threshold for noise removal. Defaults to 0.01.
+            min_eccentricity (float, optional): The minimum eccentricity threshold for noise removal. Defaults to 0.7.
+
+        Returns:
+            numpy.ndarray: The data with noise removed.
+    """
     frames_num, rows, cols = data.shape
     for i in range(frames_num):
         # remove noise by area, orientation, eccentricity:
@@ -149,14 +161,34 @@ def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0
 
 # @numba.jit(nopython=True)
 def extract_area(video, area):
+    """
+        Extracts a specific area from a video.
+
+        Args:
+            video (array-like): The input video.
+            area (tuple): The coordinates of the area to be extracted (x1, y1, x2, y2).
+
+        Returns:
+            numpy.ndarray: The extracted area as a video.
+    """
     x1, y1, x2, y2 = area  # Extract the rectangle coordinates
-    print(x1,y1,x2,y2)
+    print(x1, y1, x2, y2)
     result = np.zeros_like(video)  # Create a black video of the same shape as the input video
-    result[:,y1:y2, x1:x2] = video[:,y1:y2, x1:x2]  # Set the rectangle region to the corresponding region in the input video
+    result[:, y1:y2, x1:x2] = video[:, y1:y2, x1:x2]  # Set the rectangle region to the corresponding region in the input video
     return result
 
 
 def choose_thresh(video, area):
+    """
+        Chooses thresholds for a video based on a specific area.
+
+        Args:
+            video (array-like): The input video.
+            area (tuple): The coordinates of the area to be considered (x1, y1, x2, y2).
+
+        Returns:
+            numpy.ndarray: An array of thresholded videos.
+    """
     video = normalize_to_float(video)
     video = extract_area(video, area)
     # video = extract_area(video,area)

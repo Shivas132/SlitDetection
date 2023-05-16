@@ -16,6 +16,16 @@ data = frames_as_matrix_from_binary_file(video_path, offset=False)
 
 # --- create delta images for each frame: ---
 def deltas_video(data: np.array, thresh: float = 0.02) -> np.array:
+    """
+        Calculates delta frames for a given video data.
+
+        Args:
+            data (numpy.ndarray): The input video data.
+            thresh (float, optional): The threshold for determining changes between frames. Defaults to 0.02.
+
+        Returns:
+            numpy.ndarray: The delta frames.
+    """
     frames_num, rows, cols = data.shape
     deltas = np.empty((frames_num, rows, cols), dtype=np.uint8)
     sum_of_deltas = np.zeros((rows, cols), np.float64)
