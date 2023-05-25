@@ -12,8 +12,9 @@ from image_process_utils import *
 from denoising import denoise_video
 import numba
 from difference_finding import deltas_video
+from paths import *
 
-# video_path = r"C:\Users\obaryosef\PycharmProjects\slitDetectionProject\SlitDetection\dat_files\outputs\exp_0_deltas_or_thresh0.02.dat"
+video_path = OUTPUTS+"exp_0_deltas_or_thresh0.02.dat"
 # video = frames_as_matrix_from_binary_file(video_path, offset=False)
 
 # --- create interactive image of region props for last frame: ---
@@ -37,6 +38,7 @@ def region_props_hover(img: np.array, props: list[str], title: str = "") -> None
         title: title to the image. by default, it's an empty string.
 
     """
+
     labels = measure.label(img)
     fig = px.imshow(img, binary_string=True, title=title)
     fig.update_traces(hoverinfo='skip')
@@ -93,7 +95,7 @@ def imfill(img: np.array) -> np.array:
 
 
 # --- remove regions that are too small to be a slit: ---
-def deltas_with_noise_removal(data: np.array, thresh: float = 0.02) -> np.array:
+def deltas_with_noise_removal(video: np.array, thresh: float = 0.02) -> np.array:
     """Create deltas video from data, with removal of non-slit objects.
 
     The method gets a video and create a for every frame a frame that contains the differences from the previous one.
@@ -109,6 +111,8 @@ def deltas_with_noise_removal(data: np.array, thresh: float = 0.02) -> np.array:
     Returns:
         np.array: a new video with only the filtered differences.
     """
+    data = np.copy(video)
+    data = normalize_to_int(data)
     frames_num, rows, cols = data.shape
     deltas = np.empty((frames_num, rows, cols), dtype=np.uint8)
     sum_of_deltas = np.zeros((rows, cols), np.float64)
@@ -132,7 +136,8 @@ def deltas_with_noise_removal(data: np.array, thresh: float = 0.02) -> np.array:
     return deltas
 
 
-def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0.7):
+
+def noise_remove_by_props(video, min_area=4, orientation=0.01, min_eccentricity=0.7):
     """
         Removes noise in the data based on specified properties.
 
@@ -145,6 +150,8 @@ def noise_remove_by_props(data, min_area=4, orientation=0.01, min_eccentricity=0
         Returns:
             numpy.ndarray: The data with noise removed.
     """
+    data = np.copy(video)
+    data = normalize_to_int(data)
     frames_num, rows, cols = data.shape
     for i in range(frames_num):
         # remove noise by area, orientation, eccentricity:
@@ -171,14 +178,33 @@ def extract_area(video, area):
         Returns:
             numpy.ndarray: The extracted area as a video.
     """
+    video = normalize_to_float(video)
     x1, y1, x2, y2 = area  # Extract the rectangle coordinates
     print(x1, y1, x2, y2)
     result = np.zeros_like(video)  # Create a black video of the same shape as the input video
     result[:, y1:y2, x1:x2] = video[:, y1:y2, x1:x2]  # Set the rectangle region to the corresponding region in the input video
     return result
 
+def clean_area(video, area):
+    """
+        Extracts a specific area from a video.
 
-def choose_thresh(video, area):
+        Args:
+            video (array-like): The input video.
+            area (tuple): The coordinates of the area to be extracted (x1, y1, x2, y2).
+
+        Returns:
+            numpy.ndarray: The extracted area as a video.
+    """
+    video = normalize_to_float(video)
+    x1, y1, x2, y2 = area  # Extract the rectangle coordinates
+    print(x1, y1, x2, y2)
+    result = video  # Create a black video of the same shape as the input video
+    result[:, y1:y2, x1:x2] = 0 # Set the rectangle region to the corresponding region in the input video
+    return normalize_to_int(result)
+
+
+def create_deltas_videos(video, area):
     """
         Chooses thresholds for a video based on a specific area.
 
