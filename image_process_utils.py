@@ -1,4 +1,5 @@
 """Utility functions for image processing"""
+import os
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -65,6 +66,26 @@ def frames_as_matrix_from_binary_file(video_file_path, offset=True):
     return data
 
 
+def frames_as_matrix_from_binary_file_not_128(video_file_path, num_frames = 128):
+    # Open the .dat file in binary mode
+    with open(video_file_path, 'rb') as f:
+        f.seek(-1, os.SEEK_END)
+        # Read the number of frames (first 4 bytes) as a 32-bit signed integer
+        num_frames = int.from_bytes(f.read(1), byteorder='little')
+        # num_frames =128
+        print(num_frames)
+        # Read the remaining video data
+        f.seek(0)
+        data = np.fromfile(f, dtype='<i2', count=num_frames * FRAME_HEIGHT * FRAME_WIDTH)
+
+    # Reshape the array into the desired dimensions
+    data = data.reshape((num_frames, FRAME_HEIGHT, FRAME_WIDTH))
+    # Normalize the array to [0, 1] grayscale
+    data = normalize_to_float(data)
+    show_frame(data[30])
+    return data, num_frames
+
+
 def show_frame(img, title='', figsize=(20, 16)):
     """
         Displays an image.
@@ -96,10 +117,21 @@ def save_video(video, name, directory=OUTPUTS):
         Returns:
             None
     """
-    out_file = open(
-        f"{directory}{name}.dat", 'wb')
+    path = f"{directory}{name}.dat"
+    out_file = open(path, 'wb')
     video.astype('int16').tofile(out_file, sep='', format='%d')
     out_file.close()
+    return path
+
+def save_video_not_128(video, name, directory=OUTPUTS):
+    # Check if the directory exists, create it if necessary
+    file_path = f"{directory}{name}.dat"
+    # Write the number of frames at the beginning of the file
+    num_frames = video.shape[0]
+    with open(file_path, 'wb') as out_file:
+        video.astype('int16').tofile(out_file, sep='', format='%d')
+    with open(file_path, 'ab') as out_file:
+        out_file.write(num_frames.to_bytes(1, byteorder='big'))
 
 
 def compare_2_frames(img1, img2, title1='img1', title2='img2'):
