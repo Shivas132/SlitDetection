@@ -3,27 +3,10 @@
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
-from skimage import measure, data
-import numpy as np
-import pandas as pd
-from skimage.morphology import closing, square
+from skimage import measure
 import cv2 as cv
 from image_process_utils import *
-from denoising import denoise_video
-import numba
 from difference_finding import deltas_video
-from paths import *
-
-video_path = OUTPUTS+"exp_0_deltas_or_thresh0.02.dat"
-# video = frames_as_matrix_from_binary_file(video_path, offset=False)
-
-# --- create interactive image of region props for last frame: ---
-
-# frame_num = 127
-# frame = video[frame_num]
-#
-# morph_size = 3
-# closed = closing(frame, square(morph_size))
 
 
 def region_props_hover(img: np.array, props: list[str], title: str = "") -> None:
@@ -58,15 +41,6 @@ def region_props_hover(img: np.array, props: list[str], title: str = "") -> None
     plotly.io.show(fig)
 
 
-properties = ['area', 'eccentricity', 'perimeter', 'axis_major_length', 'orientation']
-
-# box = np.zeros((30, 30), dtype='int')
-# box[2:12, 2:4] = 255
-# box[15:17, 4:20] = 255
-# regs = measure.regionprops(box)
-# region_props_hover(box, ['area', 'orientation'])
-
-
 def imfill(img: np.array) -> np.array:
     """Fill holes in objects in an image using flood fill algorithm.
 
@@ -76,25 +50,14 @@ def imfill(img: np.array) -> np.array:
     Returns:
         np.array: the image with the holes filled.
     """
-    h, w = img.shape
-    mask = np.zeros((h+2, w+2), np.uint8)
+    rows, cols = img.shape
+    mask = np.zeros((rows + 2, cols + 2), np.uint8)
     im_ff = img.copy()
     cv.floodFill(im_ff, mask, (0, 0), MAX_GRAY_VAL)
     im_ff = cv.bitwise_not(im_ff)
     return img | im_ff
 
 
-# --- create imfill video: ---
-# video = normalize_to_int(video)
-# imfills = np.empty(video.shape)
-# for i in range(video.shape[0]):
-#     imfills[i] = imfill(video[i])
-
-# imfills = normalize_to_float(imfills)
-# save_video(imfills, "exp_0_imfill_float")
-
-
-# --- remove regions that are too small to be a slit: ---
 def deltas_with_noise_removal(video: np.array, thresh: float = 0.02) -> np.array:
     """Create deltas video from data, with removal of non-slit objects.
 
@@ -105,7 +68,7 @@ def deltas_with_noise_removal(video: np.array, thresh: float = 0.02) -> np.array
     Identification is Based on a minimal area of the object, and range of angles at which a slit may appear.
 
     Args:
-        data: input video.
+        video: input video.
         thresh: threshold for the thresholding process for each frame.
 
     Returns:
@@ -117,7 +80,7 @@ def deltas_with_noise_removal(video: np.array, thresh: float = 0.02) -> np.array
     deltas = np.empty((frames_num, rows, cols), dtype=np.uint8)
     sum_of_deltas = np.zeros((rows, cols), np.float64)
     for i in range(1, frames_num):
-        delta_img = data[i] - data[i-1]
+        delta_img = data[i] - data[i - 1]
         delta_img = thresholding(delta_img, thresh)
         sum_of_deltas = cv.bitwise_or(sum_of_deltas, delta_img)
         deltas[i] = sum_of_deltas
@@ -136,15 +99,13 @@ def deltas_with_noise_removal(video: np.array, thresh: float = 0.02) -> np.array
     return deltas
 
 
-
-def noise_remove_by_props(video, min_area=4, orientation=0.01, min_eccentricity=0.7):
+def noise_remove_by_props(video, min_area=4, min_eccentricity=0.7):
     """
         Removes noise in the data based on specified properties.
 
         Args:
-            data (array-like): The input data.
+            video (array-like): The input data.
             min_area (int, optional): The minimum area threshold for noise removal. Defaults to 4.
-            orientation (float, optional): The orientation threshold for noise removal. Defaults to 0.01.
             min_eccentricity (float, optional): The minimum eccentricity threshold for noise removal. Defaults to 0.7.
 
         Returns:
@@ -160,7 +121,7 @@ def noise_remove_by_props(video, min_area=4, orientation=0.01, min_eccentricity=
         regs = measure.regionprops(labels, data[i])
         # properties to recognize a slit:
         for reg in regs:
-            if reg.area < min_area: # or np.abs(reg.orientation) < orientation or reg.eccentricity < min_eccentricity:
+            if reg.area < min_area or reg.eccentricity < min_eccentricity:
                 min_r, min_c, max_r, max_c = reg.bbox
                 data[i][min_r:max_r, min_c:max_c] = 0
     return data
@@ -180,10 +141,10 @@ def extract_area(video, area):
     """
     video = normalize_to_float(video)
     x1, y1, x2, y2 = area  # Extract the rectangle coordinates
-    print(x1, y1, x2, y2)
     result = np.zeros_like(video)  # Create a black video of the same shape as the input video
     result[:, y1:y2, x1:x2] = video[:, y1:y2, x1:x2]  # Set the rectangle region to the corresponding region in the input video
     return result
+
 
 def clean_area(video, area):
     """
@@ -198,9 +159,8 @@ def clean_area(video, area):
     """
     video = normalize_to_float(video)
     x1, y1, x2, y2 = area  # Extract the rectangle coordinates
-    print(x1, y1, x2, y2)
     result = video  # Create a black video of the same shape as the input video
-    result[:, y1:y2, x1:x2] = 0 # Set the rectangle region to the corresponding region in the input video
+    result[:, y1:y2, x1:x2] = 0  # Set the rectangle region to the corresponding region in the input video
     return normalize_to_int(result)
 
 
@@ -217,71 +177,10 @@ def create_deltas_videos(video, area):
     """
     video = normalize_to_float(video)
     video = extract_area(video, area)
-    # video = extract_area(video,area)
-    print(video.shape)
     videos = np.zeros((20,) + video.shape, dtype=video.dtype)
-    print(videos.shape)
-    treshes = [i/1000 for i in range(0,100,5)]
+    threshes = [i / 1000 for i in range(0, 100, 5)]
     for i in range(20):
-        deltas = deltas_video(video, thresh=treshes[i])
+        deltas = deltas_video(video, thresh=threshes[i])
         videos[i] = normalize_to_int(deltas)
         videos[i] = normalize_to_int(videos[i])
     return videos
-
-
-# video = normalize_to_int(video)
-# deltas = deltas_with_noise_removal(video)
-# save_video(deltas, "exp_0_denoised_orientation_0.01_size_4_eccen_0.7_filter")
-# props_remove = noise_remove_by_props(video)
-# save_video(props_remove, "exp_0_deltas_imfilled_orientation_0.01_size_4_eccen_0.7_filter")
-# region_props_hover(deltas[117], ['area', 'orientation', 'eccentricity'])
-
-
-# frames = video[-2:]
-# frames = normalize_to_int(frames, MAX_GRAY_VAL)
-# comp_props = ['centroid', 'bbox', 'area', 'coords']
-# max_centers_dist = 2
-
-# filled = np.array([imfill(frame) for frame in frames])
-# labeled_frames = [measure.label(frame) for frame in filled]
-# tables = [measure.regionprops_table(frame, properties=comp_props) for frame in labeled_frames]
-# tables = [pd.DataFrame(table) for table in tables]
-# regions = [measure.regionprops(frame) for frame in frames]
-
-
-# -------------- full process for exp_1: --------------
-# exp_1_path = f"{EXP_1}exp.dat"
-# data = frames_as_matrix_from_binary_file(exp_1_path)
-# data = normalize_to_int(data)
-# data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
-# data = normalize_to_float(data)
-
-# experiment of thresholds:
-# thresh = [0.01, 0.02, 0.03, 0.04]
-# for thresh in thresh:
-#     data = deltas_video(data, thresh=thresh)
-#     data = noise_remove_by_props(data)
-#     save_video(data, f'exp_1_deltas_thresh_{thresh}_orientation_0.01_size_4_eccen_0.7_filter', DELTAS)
-
-# ideal: 0.05
-
-# experiment of min_area:
-# areas = [0.5, 1, 2, 3.5]
-# for area in areas:
-#     data = deltas_video(data, 0.04)
-#     data = noise_remove_by_props(data, min_area=area)
-#     save_video(data, f'exp_1_deltas_thresh_0.04_orientation_0.01_size_{area}_eccen_0.7_filter', DELTAS)
-
-# didn't give good results
-
-
-# -------------- exp_0 full pre-process: --------------
-# exp_0_path = f"{EXP_0}exp.dat"
-# data = frames_as_matrix_from_binary_file(exp_0_path)
-# data = normalize_to_int(data)
-# data = denoise_video(data, h=3, template_window_size=7, search_window_size=21)
-# data = normalize_to_float(data)
-# data = deltas_video(data, thresh=0.02)
-# data = noise_remove_by_props(data)
-# save_video(data, 'exp_0_preprocess_seperated_orientation_0.01_size_4_eccen_0.7_filter', DELTAS)
-
