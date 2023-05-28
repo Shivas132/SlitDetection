@@ -6,6 +6,7 @@ from image_process_utils import frames_as_matrix_from_binary_file, normalize_to_
 from denoising import denoise_video
 from region_props import create_deltas_videos, noise_remove_by_props, clean_area
 from RectangleDrawer import RectangleDrawer
+from statistic_module import get_stats, collect_data_and_print_to_files
 
 class App:
     def __init__(self):
@@ -31,7 +32,7 @@ class App:
         self.create_deltas_button = tk.Button(self.root, text="create deltas videos", command=self.create_deltas_action)
         self.save_deltas_button = tk.Button(self.root, text="Save this video", command=self.save_deltas_video)
         self.save_final_button = tk.Button(self.root, text="Save", command=self.save_final_video)
-        self.first_clean_button = tk.Button(self.root, text="clean Video", command=self.first_clean_helper_action)
+        self.first_clean_button = tk.Button(self.root, text="clean Video", command=self.first_clean_action)
         self.select_frame_button = tk.Button(self.root, text='Select Frame', command=self.select_first_frame_action)
         self.select_last_frame_button = tk.Button(self.root, text='Select Frame', command=self.select_last_frame_action)
         self.frame_scale = None
@@ -42,6 +43,7 @@ class App:
         self.clean_area_button = tk.Button(self.root, text="clean this area", command=self.clean_area_action)
         self.done_cleaning_button = tk.Button(self.root, text="Done", command=self.done_cleaning_action)
         self.go_statistics_button = tk.Button(self.root, text="statistics", command=self.go_statistics_action)
+        self.save_data_to_file_button = tk.Button(self.root, text="Save data to files", command=self.save_data)
 
 
 
@@ -65,6 +67,11 @@ class App:
         self.black_rectangle = None
         self.canvas_widget= None
         self.create_canvas()
+        self.figures = []
+        self.current_figure_index = 0
+
+
+
         tk.mainloop()
 
     def create_canvas(self):
@@ -78,13 +85,12 @@ class App:
 
     def create_new_canvas(self):
         self.canvas_widget.grid_forget()
-        self.frame_scale.grid_forget()
+        # self.frame_scale.grid_forget()
         self.fig, (self.ax, self.ax1) = plt.subplots(nrows=1, ncols=2, constrained_layout=True)
         self.ax.set_axis_off()
         self.ax1.set_axis_off()
         self.ax.imshow(self.data[0], cmap='gray')
         self.ax1.imshow(self.new_data[0], cmap='gray')
-        self.frame_scale = tk.Scale(self.root, from_=0, to=127, orient=tk.HORIZONTAL, length=800)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=2, column=0, padx=0, pady=0, sticky="NSWE")
@@ -93,7 +99,6 @@ class App:
     def save_name(self, path):
         filename = path.split('/')[-1]  # Get the filename from the path
         self.exp_name = '.'.join(filename.split('.')[:-1])  # Strip the extension
-        print(self.exp_name)
 
     def update_image(self, value):
         self.current_frame = int(value)
@@ -149,14 +154,12 @@ class App:
     def select_first_frame_action(self):
         self.print_message("")
         self.slit_frame_idx = int(self.frame_scale.get())
-        print(self.slit_frame_idx)
         self.slit_frame = self.data[int(self.frame_scale.get())]
         if self.slit_frame_idx >= 110:
             self.print_error("video have to be more the 10 frame")
             return
         if self.slit_frame_idx >= 5:
             self.data = self.data[self.slit_frame_idx - 5:]
-            print((self.data).shape)
             self.update_image(0)
             self.frame_scale.set(0)
             self.frame_scale.configure(from_=0, to=127 - self.slit_frame_idx + 5)
@@ -186,7 +189,7 @@ class App:
         self.select_slit_area()
 
     def select_slit_area(self):
-        self.print_message("Please select slit area")
+        self.print_message("Please select slit area\n draw a rectangle on the screen")
         self.rec = RectangleDrawer(self.fig, self.ax)
         self.select_slit_area_button.grid(row=5, column=0, pady=5)
 
@@ -195,13 +198,13 @@ class App:
         self.rec.kill()
         self.rec = None
         self.select_slit_area_button.grid_remove()
-        self.first_clean1()
+        self.first_clean()
 
-    def first_clean1(self):
+    def first_clean(self):
         self.message_label.config(text="Click clean to clean your video")
         self.first_clean_button.grid(row=4, column=0, pady=10)
 
-    def first_clean_helper_action(self):
+    def first_clean_action(self):
         self.first_clean_button.grid_remove()
         self.message_label.config(text="Processing video, please wait...")
         self.root.update()
@@ -257,7 +260,8 @@ class App:
     def clean_area(self):
         self.frame_scale.set(0)
         self.update_image(0)
-        self.print_message("Please select noise and click clean")
+        self.print_message("Please select noise and click clean\n"
+                           "use your mouse to draw a rectangle and click the button below")
         self.clean_area_button.grid(row=4, column=0, pady=2)
         self.done_cleaning_button.grid(row=5, column=0, pady=2)
         self.black_rectangle = RectangleDrawer(self.fig, self.ax1)
@@ -270,11 +274,13 @@ class App:
 
     def done_cleaning_action(self):
         self.print_message("Here is your final Video")
+        self.black_rectangle.kill()
         self.clean_area_button.grid_remove()
         self.done_cleaning_button.grid_remove()
         self.go_statistics_button.grid(row=4, column=0, pady=2)
 
     def go_statistics_action(self):
+        self.save_final_button.grid_forget()
         self.go_statistics_button.grid_forget()
         self.frame_scale.grid_remove()
         self.canvas_widget.grid_remove()
@@ -297,37 +303,67 @@ class App:
         self.input_box.grid_columnconfigure(1, weight=1)
         self.input_box.grid_columnconfigure(2, weight=1)
         self.input_box.grid_columnconfigure(3, weight=1)
-        height_title.grid(row=0, column=0, padx=10, pady=2)
-        self.height_entry.grid(row=1, column=0, padx=10, pady=2)
-        width_title.grid(row=0, column=1, padx=10, pady=2)
-        self.width_entry.grid(row=1, column=1, padx=10, pady=2)
-        area_title.grid(row=0, column=2, padx=10, pady=2)
-        self.area_entry.grid(row=1, column=2, padx=10, pady=2)
-        resolution_title.grid(row=0, column=3, padx=10, pady=2)
-        self.resolution_entry.grid(row=1, column=3, padx=10, pady=2)
-        self.input_box.grid(row=2, column=0, pady=2)
+        height_title.grid(row=0, column=0, padx=10, pady=5)
+        self.height_entry.grid(row=1, column=0, padx=10, pady=5)
+        width_title.grid(row=0, column=1, padx=10, pady=5)
+        self.width_entry.grid(row=1, column=1, padx=10, pady=5)
+        area_title.grid(row=0, column=2, padx=10, pady=5)
+        self.area_entry.grid(row=1, column=2, padx=10, pady=5)
+        resolution_title.grid(row=0, column=3, padx=10, pady=5)
+        self.resolution_entry.grid(row=1, column=3, padx=10, pady=5)
+        self.input_box.grid(row=2, column=0, pady=5)
         self.set_size_button = tk.Button(self.root, text="done", command=self.check_size_input)
         self.set_size_button.grid(row=5, column=0, pady=20)
     def check_size_input(self):
         self.width = self.width_entry.get()
         self.height = self.height_entry.get()
         self.area = self.area_entry.get()
-        self.zoom = self.resolution_entry.get()
+        self.resolution = self.resolution_entry.get()
         try:
             self.width = float(self.width)
             self.height = float(self.height)
             self.area = float(self.area)
-            self.zoom = float(self.zoom)
-
+            self.resolution = float(self.resolution)
         except:
-            self.print_error("width and height have to be a number")
-        finally:
-            self.set_size_button.grid_forget()
-            self.input_box.grid_forget()
-            self.set_size_button.grid_forget()
-            self.create_statistics()
-    def create_statistics(self):
-        self.print_message("statistics")
+            self.print_error("inputs have to be numbers")
+            return
+        self.set_size_button.grid_forget()
+        self.input_box.grid_forget()
+        self.set_size_button.grid_forget()
+        self.create_statistics()
 
+
+    def create_statistics(self):
+        self.print_message("Statistics:")
+        self.nav_box = tk.Frame(self.root)
+        # Create the buttons
+        self.left_button = tk.Button(self.nav_box, text="<", command=self.show_previous_figure)
+        self.right_button = tk.Button(self.nav_box, text=">", command=self.show_next_figure)
+
+        self.left_button.grid(row=0, column=0, padx=10, pady=5)
+        self.right_button.grid(row=0, column=1, padx=10, pady=5)
+        self.nav_box.grid(row=4,column=0)
+        self.figures = get_stats(self.new_data,self.resolution,self.area,self.height,self.width)
+        self.show_current_figure()
+        self.save_data_to_file_button.grid(row=5,column=0)
+        self.root.update()
+
+    def show_previous_figure(self):
+        self.current_figure_index =(self.current_figure_index-1) % len(self.figures)
+        self.show_current_figure()
+
+    def show_next_figure(self):
+        self.current_figure_index = (self.current_figure_index+1) % len(self.figures)
+        self.show_current_figure()
+
+    def show_current_figure(self):
+        if self.figures:
+            current_figure = self.figures[self.current_figure_index]
+            canvas = FigureCanvasTkAgg(current_figure, master=self.root)
+            canvas.draw()
+            canvas.get_tk_widget().grid(row=3, column=0)
+
+    def save_data(self):
+        collect_data_and_print_to_files(self.new_data,self.area,self.height,self.width)
 
 app = App()

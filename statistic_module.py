@@ -2,10 +2,11 @@
 The assumption is that all the objects in the video are slits - the whole cleaning process has been done before.
 """
 from image_process_utils import *
+from matplotlib.figure import Figure
+
 from skimage import measure
-
-
-PIXEL_SIZE = 32 * 10**(-3)
+import pandas as pd
+PIXEL_SIZE = 32 * 10 ** (-3)
 
 
 def plot_stats_for_time(data, title, y_label, x_label="Time"):
@@ -19,15 +20,19 @@ def plot_stats_for_time(data, title, y_label, x_label="Time"):
             x_label (str, optional): The label for the x-axis. Defaults to "Time".
 
         Returns:
-            None
+            fig (matplotlib.figure.Figure): The figure containing the plot.
     """
+    # Plotting code (unchanged)
     time_axis = np.arange(0, data.shape[0], 1)
-    plt.plot(time_axis, data)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid()
-    plt.show()
+    fig = Figure()
+    ax = fig.add_subplot(111)
+    ax.plot(time_axis, data)
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.grid()
+
+    return fig
 
 
 def slits_coverage_rate(video, flat_area, resolution=1, pxl_size=PIXEL_SIZE, plot_graph=False):
@@ -48,7 +53,7 @@ def slits_coverage_rate(video, flat_area, resolution=1, pxl_size=PIXEL_SIZE, plo
     coverage_rate_vector = np.sum(np.sum(video, axis=1), axis=1) * pixel_size
     coverage_rate_vector = (coverage_rate_vector / flat_area) * 100
     if plot_graph:
-        plot_stats_for_time(coverage_rate_vector, "Slit Area Percentage Over Time", "Percentage")
+        return plot_stats_for_time(coverage_rate_vector, "Slit Area Percentage Over Time", "Percentage")
 
     return coverage_rate_vector
 
@@ -71,7 +76,7 @@ def slits_width_over_time(video, flat_height, pxl_size=PIXEL_SIZE, resolution=1,
     avg_width = np.mean(np.sum(video, axis=1), axis=1) * pixel_size
     avg_width = (avg_width / flat_height) * 100
     if plot_graph:
-        plot_stats_for_time(avg_width, "Slit Width Percentage Over Time", "Percentage")
+        return plot_stats_for_time(avg_width, "Slit Width Percentage Over Time", "Percentage")
 
     return avg_width
 
@@ -134,7 +139,7 @@ def slits_length_over_time(video, flat_width, pxl_size=PIXEL_SIZE, resolution=1,
     lengths = (lengths / flat_width) * 100
 
     if plot_graph:
-        plot_stats_for_time(lengths, "Slit Length Percentage Over Time", "Percentage")
+        return plot_stats_for_time(lengths, "Slit Length Percentage Over Time", "Percentage")
 
     return lengths
 
@@ -163,9 +168,61 @@ def find_4_extreme_points(video):
     return np.array(points_list)
 
 
-video = frames_as_matrix_from_binary_file(f"{OUTPUTS}exp_1_only_slit.dat", offset=False)
-# find_4_extreme_points()
+video = frames_as_matrix_from_binary_file(f"{OUTPUTS}exp_deltas_thresh=0.06_final_results.dat", offset=False)
+# # # find_4_extreme_points()
 # slits_coverage_rate(video, resolution=2, flat_area=1570.8, plot_graph=True)
 # slits_width_over_time(video, resolution=1, flat_height=8, plot_graph=True)
 # slits_length_over_time(video, resolution=1, flat_width=8, plot_graph=True)
+
+
+def get_stats(video,resolution,flat_area,flat_height,flat_width):
+    return [slits_coverage_rate(video, resolution=resolution, flat_area=flat_area, plot_graph=True),
+            slits_width_over_time(video, resolution=resolution, flat_height=flat_height, plot_graph=True),
+            slits_length_over_time(video, resolution=resolution, flat_width=flat_width, plot_graph=True)]
+
+def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, pxl_size=PIXEL_SIZE, resolution=1):
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    coverage_rate = slits_coverage_rate(video, flat_area, resolution, pxl_size, plot_graph=False)
+    width_over_time = slits_width_over_time(video, flat_height, pxl_size, resolution, plot_graph=False)
+    length_over_time = slits_length_over_time(video, flat_width, pxl_size, resolution, plot_graph=False)
+
+    data = {
+        'Time': np.arange(1, video.shape[0] + 1),
+        'Coverage Rate': coverage_rate,
+        'Slit Width': width_over_time,
+        'Slit Length': length_over_time,
+    }
+    df = pd.DataFrame(data)
+    df.set_index('Time', inplace=True)
+    # Save DataFrame to Excel
+    df.to_excel('slits_data.xlsx')
+
+    coverage_rate_plot = slits_coverage_rate(video, flat_area, resolution, pxl_size, plot_graph=True)
+    width_over_time_plot = slits_width_over_time(video, flat_height, pxl_size, resolution, plot_graph=True)
+    length_over_time_plot = slits_length_over_time(video, flat_width, pxl_size, resolution, plot_graph=True)
+
+    data = {
+        'Time': np.arange(1, video.shape[0] + 1),
+        'Coverage Rate': coverage_rate_plot,
+        'Slit Width': width_over_time_plot,
+        'Slit Length': length_over_time_plot,
+    }
+
+    df = pd.DataFrame(data)
+    df.set_index('Time', inplace=True)
+
+    # Save DataFrame to Excel
+    df.to_excel('slits_data.xlsx', sheet_name='Data')
+
+    # Save plots to PDF
+    with PdfPages('slits_plots.pdf') as pdf:
+        pdf.savefig(coverage_rate_plot)
+        pdf.savefig(width_over_time_plot)
+        pdf.savefig(length_over_time_plot)
+
+    plt.close('all')  # Close all open plots
+    print("Data has been saved to 'slits_data.xlsx'.")
+    print("Plots have been saved to 'slits_plots.pdf'.")
+
 

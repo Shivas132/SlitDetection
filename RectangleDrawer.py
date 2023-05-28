@@ -6,8 +6,8 @@ from region_props import clean_area
 class RectangleDrawer:
     def __init__(self, fig, ax):
         self.fig, self.current_ax = fig,ax
-        self.x1, self.y1 = 0,250
-        self.x2, self.y2 = 250 ,400
+        self.x1, self.y1 = 0,0
+        self.x2, self.y2 = 400, 250
         # Initialize the RectangleSelector
         self.rs = RectangleSelector( self.current_ax,
             self.line_select_callback,
