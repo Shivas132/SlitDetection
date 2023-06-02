@@ -66,24 +66,31 @@ def frames_as_matrix_from_binary_file(video_file_path, offset=True):
     return data
 
 
-def frames_as_matrix_from_binary_file_not_128(video_file_path, num_frames = 128):
+def frames_as_matrix_from_binary_file_not_128(video_file_path, num_frames = 128, offset=False):
+    """
+        Reads frames from a binary file and returns them as a matrix.
+
+        Args:
+            video_file_path (str): The path to the binary file.
+            offset (bool, optional): Whether to apply an offset while reading the file. Defaults to True.
+
+        Returns:
+            numpy.ndarray: The frames as a matrix.
+    """
     # Open the .dat file in binary mode
     with open(video_file_path, 'rb') as f:
-        f.seek(-1, os.SEEK_END)
-        # Read the number of frames (first 4 bytes) as a 32-bit signed integer
-        num_frames = int.from_bytes(f.read(1), byteorder='little')
-        # num_frames =128
-        print(num_frames)
-        # Read the remaining video data
-        f.seek(0)
+        if offset:
+            # Move the file pointer to the specified offset
+            f.seek(OFFSET)
+        # Read the data into a NumPy array
         data = np.fromfile(f, dtype='<i2', count=num_frames * FRAME_HEIGHT * FRAME_WIDTH)
 
     # Reshape the array into the desired dimensions
     data = data.reshape((num_frames, FRAME_HEIGHT, FRAME_WIDTH))
-    # Normalize the array to [0, 1] grayscale
+    # Normalize the array to [0,1] grayscale
     data = normalize_to_float(data)
-    show_frame(data[30])
-    return data, num_frames
+    return data
+
 
 
 def show_frame(img, title='', figsize=(20, 16)):

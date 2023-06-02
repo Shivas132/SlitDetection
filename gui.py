@@ -7,14 +7,20 @@ from denoising import denoise_video
 from region_props import create_deltas_videos, noise_remove_by_props, clean_area
 from RectangleDrawer import RectangleDrawer
 from statistic_module import get_stats, collect_data_and_print_to_files
+from remove_non_slit_objects import blocks_objects_filtering
+from paths import OUTPUTS
 
 class App:
     def __init__(self):
+        # init window and grid
         self.root = tk.Tk()
-        # self.line0 = tk.Frame(self.root)
+        self.root.title("Slit Detector")
+        self.line0 = tk.Frame(self.root)
         self.line4 = tk.Frame(self.root)
-        # self.line0.grid_rowconfigure(0, weight=1)
-        # self.line0.grid_columnconfigure(1, weight=1)
+        self.line0.grid_rowconfigure(0, weight=1)
+        self.line0.grid_rowconfigure(1, weight=1)
+        self.line0.grid_columnconfigure(0, weight=1)
+        self.line0.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_rowconfigure(2, weight=5)
@@ -22,6 +28,7 @@ class App:
         self.root.grid_rowconfigure(4, weight=1)
         self.root.grid_rowconfigure(5, weight=1)
         self.root.grid_rowconfigure(6, weight=1)
+        self.root.grid_rowconfigure(7, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         # self.line0.grid(row=0, column=0, pady=0)
         self.line4.grid(row = 4, column = 0, pady = 0)
@@ -35,9 +42,7 @@ class App:
         self.first_clean_button = tk.Button(self.root, text="clean Video", command=self.first_clean_action)
         self.select_frame_button = tk.Button(self.root, text='Select Frame', command=self.select_first_frame_action)
         self.select_last_frame_button = tk.Button(self.root, text='Select Frame', command=self.select_last_frame_action)
-        self.frame_scale = None
-
-        self.select_video_button.grid(row=0, column=0, pady=5, padx=5)
+        self.select_video_button.grid(row=3, column=0, pady=5, padx=5)
         self.select_thresh_button = tk.Button(self.root, text="choose this threshold", command=self.select_threshold_action)
         self.second_clean_button = tk.Button(self.root, text="clean Video", command=self.second_clean_action)
         self.clean_area_button = tk.Button(self.root, text="clean this area", command=self.clean_area_action)
@@ -45,35 +50,37 @@ class App:
         self.go_statistics_button = tk.Button(self.root, text="statistics", command=self.go_statistics_action)
         self.save_data_to_file_button = tk.Button(self.root, text="Save data to files", command=self.save_data)
 
+        # labels
+        self.main_messege = tk.Label(self.line0, text="Welcome to Slit Detector!", font=("Arial", 18))
+        self.main_messege.grid(row=1, column=0, pady=5,sticky="N")
+        self.sub_main_messege = tk.Label(self.line0, text="Please select a video file", font=("Arial", 14))
+        self.sub_main_messege.grid(row=2, column=0, pady=5, sticky="S")
+        self.line0.grid(row=1, column=0, pady=20)
 
-
-        self.message_label = tk.Label(self.root, text="Please select a video file", font=("Arial", 14))
-        self.message_label.grid(row=1, column=0, pady=5)
+        self.frame_scale = None
         self.fig = None
         self.ax = None
         self.ax1 = None
         self.data = None
         self.new_data = None
-        self.slit_frame = None
         self.slit_frame_idx = None
-        self.deltas_videos = []
-        self.current_frame = 0
         self.rec = None
         self.slit_area = None
         self.slit_frame_idx = None
         self.canvas = None
-        self.video_scale = None
+        self.threshold_scale = None
         self.exp_name = None
         self.black_rectangle = None
-        self.canvas_widget= None
+        self.canvas_widget = None
+        self.deltas_videos = []
+        self.current_figure_index = 0
+        self.current_frame = 0
         self.create_canvas()
         self.figures = []
-        self.current_figure_index = 0
-
-
 
         tk.mainloop()
 
+    # utils functions
     def create_canvas(self):
         self.fig, self.ax = plt.subplots()
         self.ax.set_axis_off()
@@ -110,51 +117,67 @@ class App:
     def save_deltas_video(self):
         name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
         path = save_video(self.new_data, name)
-        self.print_message(f"your video saved under\n {path}")
+        self.print_sub_main_message(f"your video saved under\n {path}")
 
     def save_final_video(self):
         name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}_final_results"
         path = save_video(self.new_data, name)
-        self.print_message(f"your video saved under\n{path}")
+        self.print_sub_main_message(f"your video saved under\n{path}")
 
-    def print_message(self, message):
-        self.message_label.config(text=message, fg='black')
+    def save_data(self):
+        name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
+        collect_data_and_print_to_files(self.new_data, self.area, self.height, self.width,name)
+        self.print_sub_main_message(f"your video data saved under{OUTPUTS}{name} in OUTPUTS folder")
+
+    def print_main_message(self, message):
+        self.main_messege.config(text=message, fg='black')
+        self.root.update()
+
+    def print_sub_main_message(self, message):
+        self.sub_main_messege.config(text=message, fg='black')
         self.root.update()
 
     def print_error(self, message):
-        self.message_label.config(text=message, fg='red')
+        self.sub_main_messege.config(text=message, fg='red')
         self.root.update()
 
     def switch_deltas_video(self, value):
-        value = int(value)
-        self.thresh_video_index = value
-        self.new_data = self.deltas_videos[value]
-        treshes = [i / 1000 for i in range(0, 100, 5)]
-        self.cur_thresh = treshes[value]
-        self.message_label.config(text=f"tresh = {treshes[value]}")
+        value = float(value)
+        self.cur_thresh = value
+
+        self.new_data = self.deltas_videos[int(value*20)]
+        # thresholds = [i / 1000 for i in range(0, 100, 5)]
+        # self.main_messege.config(text=f"threshold = {thresholds[value]}")
         self.update_image(self.current_frame)
+
     # -----App flow------
     def select_raw_video(self):
-        self.select_video_button.grid_remove()
         file_path = filedialog.askopenfilename(initialdir="/", title="Select Video",
                                                filetypes=(("dat files", "*.dat"),))
-        self.save_name(file_path)
-        self.data = frames_as_matrix_from_binary_file(file_path)
-        self.data = normalize_to_int(self.data)
+        try:
+            self.data = frames_as_matrix_from_binary_file(file_path)
+            self.data = normalize_to_int(self.data)
+            self.save_name(file_path)
+            self.select_video_button.grid_remove()
+        except:
+            self.print_error("can't read this file please select 128/400/250 raw data")
+            return
         self.ax.imshow(self.data[0], cmap='gray')
         self.fig.canvas.draw()
-        self.frame_scale.grid(row=3, column=0, pady=2, sticky="N")
+        # self.frame_scale_label = tk.Label(self.root, text="frames scale", font=("Arial", 10))
+        # self.frame_scale_label.grid(row=3, column=0, pady=0,sticky="S")
+        self.frame_scale.grid(row=4, column=0,pady=2, sticky="N")
         self.select_first_frame()
 
     def select_first_frame(self):
         self.frame_scale.set(0)
-        self.print_message("Please select a frame where the slit shows do to not above 110")
-        self.select_frame_button.grid(row=4, column=0, pady=10)
+        self.print_main_message("Please select the first frame where the slit appear")
+        self.print_sub_main_message("don't choose frame above 110")
+        self.select_frame_button.grid(row=5, column=0, pady=10)
 
     def select_first_frame_action(self):
-        self.print_message("")
+        self.print_sub_main_message("")
         self.slit_frame_idx = int(self.frame_scale.get())
-        self.slit_frame = self.data[int(self.frame_scale.get())]
         if self.slit_frame_idx >= 110:
             self.print_error("video have to be more the 10 frame")
             return
@@ -170,9 +193,9 @@ class App:
 
     def select_last_frame(self):
         self.frame_scale.set(0)
-        self.print_message("if wou want to cut the end of the video please select the last frame\n"
-                           "(Optional, leave on zero for not choosing")
-        self.select_last_frame_button.grid(row=4, column=0, pady=10)
+        self.print_main_message("Please choose the last frame of the video")
+        self.print_sub_main_message("optional leave on zero elsewhere")
+        self.select_last_frame_button.grid(row=5, column=0, pady=10)
 
     def select_last_frame_action(self):
         last_frame_idx = int(self.frame_scale.get())
@@ -189,7 +212,8 @@ class App:
         self.select_slit_area()
 
     def select_slit_area(self):
-        self.print_message("Please select slit area\n draw a rectangle on the screen")
+        self.print_main_message("Please select slit area")
+        self.print_sub_main_message("use your mouse to draw a rectangle around the estimated area")
         self.rec = RectangleDrawer(self.fig, self.ax)
         self.select_slit_area_button.grid(row=5, column=0, pady=5)
 
@@ -201,58 +225,73 @@ class App:
         self.first_clean()
 
     def first_clean(self):
-        self.message_label.config(text="Click clean to clean your video")
-        self.first_clean_button.grid(row=4, column=0, pady=10)
+        self.print_main_message("Click clean to clean your video")
+        self.print_sub_main_message("")
+        self.first_clean_button.grid(row=5, column=0, pady=10)
 
     def first_clean_action(self):
         self.first_clean_button.grid_remove()
-        self.message_label.config(text="Processing video, please wait...")
+        self.print_main_message("Processing video, please wait...")
         self.root.update()
         self.new_data = denoise_video(self.data)
-        self.message_label.config(text="here is you video after first clean")
+        self.print_main_message("here is you video after first clean")
+        self.print_sub_main_message("Source on the left cleaned on the right")
         self.create_new_canvas()
         self.root.update()
         self.create_deltas()
 
     def create_deltas(self):
-        self.create_deltas_button.grid(row=4, column=0, pady=10)
+        self.create_deltas_button.grid(row=5, column=0, pady=10)
         self.frame_scale.set(0)
         self.update_image(0)
 
     def create_deltas_action(self):
         self.create_deltas_button.grid_remove()
-        self.print_message("Processing video, please wait...")
+        self.print_main_message("Processing video, please wait...")
+        self.print_sub_main_message("")
         self.create_deltas_button.grid_remove()
         self.deltas_videos = create_deltas_videos(self.new_data, self.slit_area)
-        self.video_scale = tk.Scale(self.root, from_=0, to=19, orient=tk.VERTICAL, length=200, showvalue=False,
-                                    command=self.switch_deltas_video)
-        self.video_scale.grid(row=2, column=0, sticky='e')
+        self.threshold_scale = tk.Scale(self.root, from_=0, to=0.95, resolution=0.05, orient=tk.HORIZONTAL, length=400,
+                                        showvalue=True,
+                                        command=self.switch_deltas_video)
+        self.thresh_scale_label = tk.Label(self.root, text="threshold scale", font=("Arial", 10))
+        self.thresh_scale_label.grid(row=5, column=0, sticky="N",pady=0)
+        self.threshold_scale.grid(row=6, column=0, sticky='S', pady=0)
+        self.frame_scale_label = tk.Label(self.root, text="frames scale", font=("Arial", 10))
+        self.frame_scale_label.grid(row=3, column=0, pady=0,sticky="S")
         self.switch_deltas_video(0)
         self.frame_scale.set(0)
         self.update_image(0)
-        self.save_deltas_button.grid(row=0, column=0, pady=2)
+        self.save_deltas_button.grid(row=0, column=0, pady=5)
         self.select_threshold()
 
     def select_threshold(self):
-        self.print_message("Use the right slider to choose your favorite threshold")
-        self.select_thresh_button.grid(row=4, column=0, pady=10)
+        self.print_main_message("Please select your favorite threshold")
+        self.print_sub_main_message("Use the threshold scale below and choose your favorite threshold")
+        self.select_thresh_button.grid(row=7, column=0, pady=10)
 
     def select_threshold_action(self):
+        self.frame_scale_label.grid_forget()
+        self.thresh_scale_label.grid_forget()
+        self.threshold_scale.grid_forget()
         self.select_thresh_button.grid_remove()
-        self.video_scale.grid_remove()
+        self.threshold_scale.grid_remove()
         self.second_clean()
 
     def second_clean(self):
-        self.print_message("")
-        self.second_clean_button.grid(row=4, column=0, pady=2)
+        self.print_main_message("Click clean for automate clean the binary video")
+        self.print_sub_main_message("")
+        self.second_clean_button.grid(row=5, column=0, pady=2)
 
     def second_clean_action(self):
         self.frame_scale.set(0)
         self.update_image(0)
         self.save_deltas_button.grid_remove()
         self.second_clean_button.grid_remove()
-        self.print_message("Processing video please wait......")
+        self.print_main_message("Processing video, please wait...")
+        self.print_sub_main_message("")
         self.new_data = noise_remove_by_props(self.new_data)
+        self.new_data = blocks_objects_filtering(self.new_data,0)
         self.root.update()
         self.save_final_button.grid(row=0, column=0, pady=2)
         self.clean_area()
@@ -260,10 +299,10 @@ class App:
     def clean_area(self):
         self.frame_scale.set(0)
         self.update_image(0)
-        self.print_message("Please select noise and click clean\n"
-                           "use your mouse to draw a rectangle and click the button below")
-        self.clean_area_button.grid(row=4, column=0, pady=2)
-        self.done_cleaning_button.grid(row=5, column=0, pady=2)
+        self.print_main_message("Additional manual clean")
+        self.print_sub_main_message("Use your mouse to draw a rectangle over noise areas and click the button below")
+        self.clean_area_button.grid(row=5, column=0, pady=2)
+        self.done_cleaning_button.grid(row=6, column=0, pady=20)
         self.black_rectangle = RectangleDrawer(self.fig, self.ax1)
 
 
@@ -273,18 +312,19 @@ class App:
         self.root.update()
 
     def done_cleaning_action(self):
-        self.print_message("Here is your final Video")
+        self.print_main_message("Here is your final Video")
+        self.print_sub_main_message("")
         self.black_rectangle.kill()
         self.clean_area_button.grid_remove()
         self.done_cleaning_button.grid_remove()
-        self.go_statistics_button.grid(row=4, column=0, pady=2)
+        self.go_statistics_button.grid(row=5, column=0, pady=2)
 
     def go_statistics_action(self):
         self.save_final_button.grid_forget()
         self.go_statistics_button.grid_forget()
         self.frame_scale.grid_remove()
         self.canvas_widget.grid_remove()
-        self.print_message("Please enter the experiment parameters:")
+        self.print_main_message("Please enter the experiment parameters:")
         self.input_box = tk.Frame(self.root)
         self.input_box.configure(borderwidth=2, relief="solid")
 
@@ -294,7 +334,7 @@ class App:
         self.width_entry = tk.Entry(self.input_box)
         area_title = tk.Label(self.input_box, text="Model area:")
         self.area_entry = tk.Entry(self.input_box)
-        resolution_title = tk.Label(self.input_box, text="Resolution?")
+        resolution_title = tk.Label(self.input_box, text="Resolution")
         self.resolution_entry = tk.Entry(self.input_box)
 
         self.input_box.grid_rowconfigure(0, weight=1)
@@ -315,13 +355,13 @@ class App:
         self.set_size_button = tk.Button(self.root, text="done", command=self.check_size_input)
         self.set_size_button.grid(row=5, column=0, pady=20)
     def check_size_input(self):
-        self.width = self.width_entry.get()
         self.height = self.height_entry.get()
+        self.width = self.width_entry.get()
         self.area = self.area_entry.get()
         self.resolution = self.resolution_entry.get()
         try:
-            self.width = float(self.width)
             self.height = float(self.height)
+            self.width = float(self.width)
             self.area = float(self.area)
             self.resolution = float(self.resolution)
         except:
@@ -334,7 +374,8 @@ class App:
 
 
     def create_statistics(self):
-        self.print_message("Statistics:")
+        self.print_main_message("Statistics:")
+        self.print_sub_main_message("")
         self.nav_box = tk.Frame(self.root)
         # Create the buttons
         self.left_button = tk.Button(self.nav_box, text="<", command=self.show_previous_figure)
@@ -343,7 +384,8 @@ class App:
         self.left_button.grid(row=0, column=0, padx=10, pady=5)
         self.right_button.grid(row=0, column=1, padx=10, pady=5)
         self.nav_box.grid(row=4,column=0)
-        self.figures = get_stats(self.new_data,self.resolution,self.area,self.height,self.width)
+        self.figures = get_stats(self.new_data,resolution=self.resolution,flat_area=self.area,flat_height=self.height
+                                 ,flat_width=self.width)
         self.show_current_figure()
         self.save_data_to_file_button.grid(row=5,column=0)
         self.root.update()
@@ -363,7 +405,6 @@ class App:
             canvas.draw()
             canvas.get_tk_widget().grid(row=3, column=0)
 
-    def save_data(self):
-        collect_data_and_print_to_files(self.new_data,self.area,self.height,self.width)
+
 
 app = App()

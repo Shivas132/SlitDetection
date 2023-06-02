@@ -175,7 +175,6 @@ def plot_3d_slit(video, azim, elevation, roll):
     ax.set_ylabel('Width Axis')
     ax.set_zlabel('Height Axis')
     ax.set_title(f"azim = {azim}, elev = {elevation}, roll = {roll}")
-    plt.show()
 
 
 # plot_3d_slit(video, 180, -30, 180)
@@ -186,10 +185,11 @@ def plot_3d_slit(video, azim, elevation, roll):
 def get_stats(video, resolution, flat_area, flat_height, flat_width):
     return [slits_coverage_rate(video, resolution=resolution, flat_area=flat_area, plot_graph=True),
             slits_width_over_time(video, resolution=resolution, flat_height=flat_height, plot_graph=True),
-            slits_length_over_time(video, resolution=resolution, flat_width=flat_width, plot_graph=True)]
+            slits_length_over_time(video, resolution=resolution, flat_width=flat_width, plot_graph=True),
+            plot_3d_slit(video, 180, -30, 180),plot_3d_slit(video, 180, 0, 180)]
 
 
-def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, pxl_size=PIXEL_SIZE, resolution=1):
+def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width,name, pxl_size=PIXEL_SIZE, resolution=1):
     """
        Collects data related to slits from the video and saves the data and plots to files.
 
@@ -219,7 +219,9 @@ def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, p
     df = pd.DataFrame(data)
     df.set_index('Time', inplace=True)
     # Save DataFrame to Excel
-    df.to_excel('slits_data.xlsx')
+    path = f"{OUTPUTS}{name}"
+
+    df.to_excel(f'{path}_slits_data.xlsx')
 
     coverage_rate_plot = slits_coverage_rate(video, flat_area, resolution, pxl_size, plot_graph=True)
     width_over_time_plot = slits_width_over_time(video, flat_height, pxl_size, resolution, plot_graph=True)
@@ -239,7 +241,7 @@ def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, p
     df.to_excel('slits_data.xlsx', sheet_name='Data')
 
     # Save plots to PDF
-    with PdfPages('slits_plots.pdf') as pdf:
+    with PdfPages(f'{path}_slits_plots.pdf') as pdf:
         pdf.savefig(coverage_rate_plot)
         pdf.savefig(width_over_time_plot)
         pdf.savefig(length_over_time_plot)
