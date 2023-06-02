@@ -1,11 +1,13 @@
 """Module for statistic analysis of an experiment.
 The assumption is that all the objects in the video are slits - the whole cleaning process has been done before.
 """
+
 from image_process_utils import *
 from matplotlib.figure import Figure
-
+from mpl_toolkits.mplot3d import Axes3D
 from skimage import measure
 import pandas as pd
+
 PIXEL_SIZE = 32 * 10 ** (-3)
 
 
@@ -22,7 +24,6 @@ def plot_stats_for_time(data, title, y_label, x_label="Time"):
         Returns:
             fig (matplotlib.figure.Figure): The figure containing the plot.
     """
-    # Plotting code (unchanged)
     time_axis = np.arange(0, data.shape[0], 1)
     fig = Figure()
     ax = fig.add_subplot(111)
@@ -144,43 +145,65 @@ def slits_length_over_time(video, flat_width, pxl_size=PIXEL_SIZE, resolution=1,
     return lengths
 
 
-def find_4_extreme_points(video):
-    points_list = []
-
-    for frame in video:
-        object_indices = np.where(frame == 1)
-
-        if object_indices[0].size == 0:
-            points_list.append([(0, 0)] * 4)
-        else:
-            leftmost_index = np.argmin(object_indices[1])
-            rightmost_index = np.argmax(object_indices[1])
-            topmost_index = np.argmin(object_indices[0])
-            bottommost_index = np.argmax(object_indices[0])
-
-            leftmost_point = (object_indices[0][leftmost_index], object_indices[1][leftmost_index])
-            rightmost_point = (object_indices[0][rightmost_index], object_indices[1][rightmost_index])
-            topmost_point = (object_indices[0][topmost_index], object_indices[1][topmost_index])
-            bottommost_point = (object_indices[0][bottommost_index], object_indices[1][bottommost_index])
-
-            points_list.append([leftmost_point, rightmost_point, topmost_point, bottommost_point])
-
-    return np.array(points_list)
+# video = frames_as_matrix_from_binary_file(f"{OUTPUTS}exp_1_only_slit.dat", offset=False)
+# cov = slits_coverage_rate(video, resolution=1, flat_area=3078.8, plot_graph=True)
+# wid = slits_width_over_time(video, resolution=1, flat_height=11.2, plot_graph=True)
+# lens = slits_length_over_time(video, resolution=1, flat_width=11.2, plot_graph=True)
 
 
-video = frames_as_matrix_from_binary_file(f"{OUTPUTS}exp_deltas_thresh=0.06_final_results.dat", offset=False)
-# # # find_4_extreme_points()
-# slits_coverage_rate(video, resolution=2, flat_area=1570.8, plot_graph=True)
-# slits_width_over_time(video, resolution=1, flat_height=8, plot_graph=True)
-# slits_length_over_time(video, resolution=1, flat_width=8, plot_graph=True)
+def plot_3d_slit(video, azim, elevation, roll):
+    """
+        Plots a 3D representation of a slit in the video.
+
+        Args:
+            video (ndarray): The video array.
+            azim (float): The azimuthal angle of the view.
+            elevation (float): The elevation angle of the view.
+            roll (float): The roll angle of the view.
+
+        Returns:
+            None
+    """
+    z, y, x = np.where(video == 1)
+    colors = z
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(z, x, y, marker='.', s=1, c=colors, cmap='viridis')
+    ax.view_init(elev=elevation, azim=azim, roll=roll)
+    ax.set_xticklabels([])
+    ax.set_xlabel('Time Axis')
+    ax.set_ylabel('Width Axis')
+    ax.set_zlabel('Height Axis')
+    ax.set_title(f"azim = {azim}, elev = {elevation}, roll = {roll}")
+    plt.show()
 
 
-def get_stats(video,resolution,flat_area,flat_height,flat_width):
+# plot_3d_slit(video, 180, -30, 180)
+# plot_3d_slit(video, 180, 0, 180)
+# plot_3d_slit(video, 135, -30, 180)
+
+
+def get_stats(video, resolution, flat_area, flat_height, flat_width):
     return [slits_coverage_rate(video, resolution=resolution, flat_area=flat_area, plot_graph=True),
             slits_width_over_time(video, resolution=resolution, flat_height=flat_height, plot_graph=True),
             slits_length_over_time(video, resolution=resolution, flat_width=flat_width, plot_graph=True)]
 
+
 def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, pxl_size=PIXEL_SIZE, resolution=1):
+    """
+       Collects data related to slits from the video and saves the data and plots to files.
+
+       Args:
+           video (ndarray): The video array.
+           flat_area (float): The flat area size for coverage rate calculation.
+           flat_height (float): The flat height size for slits width over time calculation.
+           flat_width (float): The flat width size for slits length over time calculation.
+           pxl_size (float, optional): The pixel size. Defaults to PIXEL_SIZE.
+           resolution (int, optional): The resolution. Defaults to 1.
+
+       Returns:
+           None
+    """
     from matplotlib.backends.backend_pdf import PdfPages
 
     coverage_rate = slits_coverage_rate(video, flat_area, resolution, pxl_size, plot_graph=False)
@@ -224,5 +247,3 @@ def collect_data_and_print_to_files(video, flat_area, flat_height, flat_width, p
     plt.close('all')  # Close all open plots
     print("Data has been saved to 'slits_data.xlsx'.")
     print("Plots have been saved to 'slits_plots.pdf'.")
-
-
