@@ -6,9 +6,12 @@ from image_process_utils import frames_as_matrix_from_binary_file, normalize_to_
 from denoising import denoise_video
 from region_props import create_deltas_videos, noise_remove_by_props, clean_area
 from RectangleDrawer import RectangleDrawer
-from statistic_module import get_stats, collect_data_and_print_to_files
+# from statistic_module import get_stats, collect_data_and_print_to_files
+from statistic_module import StatisticsModule
 from remove_non_slit_objects import blocks_objects_filtering
 from paths import OUTPUTS
+from mpl_toolkits.mplot3d import Axes3D
+
 
 class App:
     def __init__(self):
@@ -124,10 +127,7 @@ class App:
         path = save_video(self.new_data, name)
         self.print_sub_main_message(f"your video saved under\n{path}")
 
-    def save_data(self):
-        name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
-        collect_data_and_print_to_files(self.new_data, self.area, self.height, self.width,name)
-        self.print_sub_main_message(f"your video data saved under{OUTPUTS}{name} in OUTPUTS folder")
+
 
     def print_main_message(self, message):
         self.main_messege.config(text=message, fg='black')
@@ -374,6 +374,7 @@ class App:
 
 
     def create_statistics(self):
+        self.stats_module = StatisticsModule(self.new_data, self.area, self.height, self.width, self.exp_name)
         self.print_main_message("Statistics:")
         self.print_sub_main_message("")
         self.nav_box = tk.Frame(self.root)
@@ -384,12 +385,14 @@ class App:
         self.left_button.grid(row=0, column=0, padx=10, pady=5)
         self.right_button.grid(row=0, column=1, padx=10, pady=5)
         self.nav_box.grid(row=4,column=0)
-        self.figures = get_stats(self.new_data,resolution=self.resolution,flat_area=self.area,flat_height=self.height
-                                 ,flat_width=self.width)
+        self.figures= self.stats_module.get_plots()
         self.show_current_figure()
         self.save_data_to_file_button.grid(row=5,column=0)
         self.root.update()
-
+    def save_data(self):
+        name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
+        self.stats_module.print_to_files(name)
+        self.print_sub_main_message(f"your video data saved under{OUTPUTS}{name} in OUTPUTS folder")
     def show_previous_figure(self):
         self.current_figure_index =(self.current_figure_index-1) % len(self.figures)
         self.show_current_figure()
