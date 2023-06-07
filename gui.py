@@ -14,6 +14,13 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class App:
+    """A graphical user interface application for Slit Detector.
+
+        This class represents the main application for the Slit Detector program. It provides a graphical user interface
+        (GUI) using the tkinter library, allowing users to interact with the program and perform various actions on video
+        data.
+
+    """
     def __init__(self):
         # init window and grid
         self.root = tk.Tk()
@@ -127,8 +134,6 @@ class App:
         path = save_video(self.new_data, name)
         self.print_sub_main_message(f"your video saved under\n{path}")
 
-
-
     def print_main_message(self, message):
         self.main_messege.config(text=message, fg='black')
         self.root.update()
@@ -201,7 +206,7 @@ class App:
         last_frame_idx = int(self.frame_scale.get())
         if last_frame_idx != 0:
             if (last_frame_idx) <= 10:
-                self.print_error("video have to be more the 10 frame")
+                self.print_error("video has to be more the 10 frame")
                 return
             self.data = self.data[:last_frame_idx+1]
             self.update_image(0)
@@ -234,8 +239,8 @@ class App:
         self.print_main_message("Processing video, please wait...")
         self.root.update()
         self.new_data = denoise_video(self.data)
-        self.print_main_message("here is you video after first clean")
-        self.print_sub_main_message("Source on the left cleaned on the right")
+        self.print_main_message("The video after first clean")
+        self.print_sub_main_message("Source on the left, cleaned on the right")
         self.create_new_canvas()
         self.root.update()
         self.create_deltas()
@@ -266,7 +271,7 @@ class App:
         self.select_threshold()
 
     def select_threshold(self):
-        self.print_main_message("Please select your favorite threshold")
+        self.print_main_message("Please select an appropriate threshold")
         self.print_sub_main_message("Use the threshold scale below and choose your favorite threshold")
         self.select_thresh_button.grid(row=7, column=0, pady=10)
 
@@ -304,7 +309,6 @@ class App:
         self.clean_area_button.grid(row=5, column=0, pady=2)
         self.done_cleaning_button.grid(row=6, column=0, pady=20)
         self.black_rectangle = RectangleDrawer(self.fig, self.ax1)
-
 
     def clean_area_action(self):
         self.new_data = clean_area(self.new_data, self.black_rectangle.ret_vals())
@@ -354,6 +358,7 @@ class App:
         self.input_box.grid(row=2, column=0, pady=5)
         self.set_size_button = tk.Button(self.root, text="done", command=self.check_size_input)
         self.set_size_button.grid(row=5, column=0, pady=20)
+
     def check_size_input(self):
         self.height = self.height_entry.get()
         self.width = self.width_entry.get()
@@ -365,13 +370,12 @@ class App:
             self.area = float(self.area)
             self.resolution = float(self.resolution)
         except:
-            self.print_error("inputs have to be numbers")
+            self.print_error("inputs has to be numbers")
             return
         self.set_size_button.grid_forget()
         self.input_box.grid_forget()
         self.set_size_button.grid_forget()
         self.create_statistics()
-
 
     def create_statistics(self):
         self.stats_module = StatisticsModule(self.new_data, self.area, self.height, self.width, self.exp_name)
@@ -389,10 +393,12 @@ class App:
         self.show_current_figure()
         self.save_data_to_file_button.grid(row=5,column=0)
         self.root.update()
+
     def save_data(self):
         name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
         self.stats_module.print_to_files(name)
         self.print_sub_main_message(f"your video data saved under{OUTPUTS}{name} in OUTPUTS folder")
+
     def show_previous_figure(self):
         self.current_figure_index =(self.current_figure_index-1) % len(self.figures)
         self.show_current_figure()
@@ -407,7 +413,6 @@ class App:
             canvas = FigureCanvasTkAgg(current_figure, master=self.root)
             canvas.draw()
             canvas.get_tk_widget().grid(row=3, column=0)
-
 
 
 app = App()

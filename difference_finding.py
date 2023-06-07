@@ -3,15 +3,6 @@
 from image_process_utils import *
 import numpy as np
 import cv2 as cv
-from paths import *
-
-video_path = OUTPUTS
-
-# h = 3
-# template_window_size = 7
-# search_window_size = 21
-
-# data = frames_as_matrix_from_binary_file(video_path, offset=False)
 
 
 # --- create delta images for each frame: ---
@@ -35,9 +26,3 @@ def deltas_video(data: np.array, thresh: float = 0.02) -> np.array:
         sum_of_deltas = cv.bitwise_or(sum_of_deltas, delta_img)
         deltas[i] = sum_of_deltas
     return deltas
-
-
-# deltas = deltas_video(data)
-# save_video(deltas, "exp_1_deltas_or_thresh0.02")
-
-

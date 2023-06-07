@@ -1,6 +1,4 @@
 """Utility functions for image processing"""
-import os
-
 from matplotlib import pyplot as plt
 import numpy as np
 from paths import *
@@ -92,7 +90,6 @@ def frames_as_matrix_from_binary_file_not_128(video_file_path, num_frames = 128,
     return data
 
 
-
 def show_frame(img, title='', figsize=(20, 16)):
     """
         Displays an image.
@@ -130,6 +127,7 @@ def save_video(video, name, directory=OUTPUTS):
     out_file.close()
     return path
 
+
 def save_video_not_128(video, name, directory=OUTPUTS):
     # Check if the directory exists, create it if necessary
     file_path = f"{directory}{name}.dat"
@@ -166,6 +164,16 @@ def compare_2_frames(img1, img2, title1='img1', title2='img2'):
 
 
 def thresholding(img: np.array, thresh: float):
+    """
+       Apply thresholding to an image.
+
+       Args:
+           img (np.array): The input image.
+           thresh (float): The threshold value.
+
+       Returns:
+           np.array: The thresholded image.
+    """
     out_img = np.zeros(img.shape)
     out_img[img >= thresh] = 1
     return out_img
