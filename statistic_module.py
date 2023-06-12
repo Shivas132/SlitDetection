@@ -233,7 +233,7 @@ class StatisticsModule:
         """
         # data to excel
         data = {
-            'Time': np.arange(1, self.video.shape[0] + 1),
+            'Time': np.arange(128),
             'Coverage Rate': self.coverage_rate_vector,
             'Slit Width': self.avg_width,
             'Slit Length': self.lengths,

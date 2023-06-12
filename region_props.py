@@ -127,7 +127,6 @@ def noise_remove_by_props(video, min_area=4, min_eccentricity=0.7):
     return data
 
 
-# @numba.jit(nopython=True)
 def extract_area(video, area):
     """
         Extracts a specific area from a video.

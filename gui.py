@@ -169,8 +169,6 @@ class App:
             return
         self.ax.imshow(self.data[0], cmap='gray')
         self.fig.canvas.draw()
-        # self.frame_scale_label = tk.Label(self.root, text="frames scale", font=("Arial", 10))
-        # self.frame_scale_label.grid(row=3, column=0, pady=0,sticky="S")
         self.frame_scale.grid(row=4, column=0,pady=2, sticky="N")
         self.select_first_frame()
 
@@ -338,8 +336,8 @@ class App:
         self.width_entry = tk.Entry(self.input_box)
         area_title = tk.Label(self.input_box, text="Model area:")
         self.area_entry = tk.Entry(self.input_box)
-        resolution_title = tk.Label(self.input_box, text="Resolution")
-        self.resolution_entry = tk.Entry(self.input_box)
+        magnitude_title = tk.Label(self.input_box, text="magnitude")
+        self.magnitude_entry = tk.Entry(self.input_box)
 
         self.input_box.grid_rowconfigure(0, weight=1)
         self.input_box.grid_rowconfigure(1, weight=1)
@@ -353,8 +351,8 @@ class App:
         self.width_entry.grid(row=1, column=1, padx=10, pady=5)
         area_title.grid(row=0, column=2, padx=10, pady=5)
         self.area_entry.grid(row=1, column=2, padx=10, pady=5)
-        resolution_title.grid(row=0, column=3, padx=10, pady=5)
-        self.resolution_entry.grid(row=1, column=3, padx=10, pady=5)
+        magnitude_title.grid(row=0, column=3, padx=10, pady=5)
+        self.magnitude_entry.grid(row=1, column=3, padx=10, pady=5)
         self.input_box.grid(row=2, column=0, pady=5)
         self.set_size_button = tk.Button(self.root, text="done", command=self.check_size_input)
         self.set_size_button.grid(row=5, column=0, pady=20)
@@ -363,12 +361,12 @@ class App:
         self.height = self.height_entry.get()
         self.width = self.width_entry.get()
         self.area = self.area_entry.get()
-        self.resolution = self.resolution_entry.get()
+        self.magnitude = self.magnitude_entry.get()
         try:
             self.height = float(self.height)
             self.width = float(self.width)
             self.area = float(self.area)
-            self.resolution = float(self.resolution)
+            self.magnitude = float(self.magnitude)
         except:
             self.print_error("inputs has to be numbers")
             return
@@ -397,7 +395,7 @@ class App:
     def save_data(self):
         name = f"{self.exp_name}_deltas_thresh={self.cur_thresh}"
         self.stats_module.print_to_files(name)
-        self.print_sub_main_message(f"your video data saved under{OUTPUTS}{name} in OUTPUTS folder")
+        self.print_sub_main_message(f"your video data saved under: {OUTPUTS}{name}")
 
     def show_previous_figure(self):
         self.current_figure_index =(self.current_figure_index-1) % len(self.figures)
