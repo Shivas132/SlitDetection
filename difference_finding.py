@@ -18,7 +18,7 @@ def deltas_video(data: np.array, thresh: float = 0.02) -> np.array:
             numpy.ndarray: The delta frames.
     """
     frames_num, rows, cols = data.shape
-    deltas = np.empty((frames_num, rows, cols), dtype=np.uint8)
+    deltas = np.empty((frames_num, rows, cols), dtype=np.float64)
     sum_of_deltas = np.zeros((rows, cols), np.float64)
     for i in range(1, frames_num):
         delta_img = data[i] - data[i-1]

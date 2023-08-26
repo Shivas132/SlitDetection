@@ -1,3 +1,4 @@
+import os
 from tkinter import filedialog
 import tkinter as tk
 import matplotlib.pyplot as plt
@@ -6,7 +7,6 @@ from image_process_utils import frames_as_matrix_from_binary_file, normalize_to_
 from denoising import denoise_video
 from region_props import create_deltas_videos, noise_remove_by_props, clean_area
 from RectangleDrawer import RectangleDrawer
-# from statistic_module import get_stats, collect_data_and_print_to_files
 from statistic_module import StatisticsModule
 from remove_non_slit_objects import blocks_objects_filtering
 from paths import OUTPUTS
@@ -157,7 +157,8 @@ class App:
 
     # -----App flow------
     def select_raw_video(self):
-        file_path = filedialog.askopenfilename(initialdir="/", title="Select Video",
+        project_folder = os.path.dirname(os.path.abspath(__file__))
+        file_path = filedialog.askopenfilename(initialdir=project_folder, title="Select Video",
                                                filetypes=(("dat files", "*.dat"),))
         try:
             self.data = frames_as_matrix_from_binary_file(file_path)
