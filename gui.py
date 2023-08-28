@@ -412,6 +412,3 @@ class App:
             canvas = FigureCanvasTkAgg(current_figure, master=self.root)
             canvas.draw()
             canvas.get_tk_widget().grid(row=3, column=0)
-
-
-app = App()
